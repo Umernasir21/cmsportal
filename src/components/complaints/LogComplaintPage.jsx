@@ -111,21 +111,21 @@ export default function LogComplaintPage({ users, user, complaints, onSubmit, on
           </CField>
           <CField label="City *" error={errors.city}>{inp('city', 'e.g. Karachi')}</CField>
           <CField label="Area / District">{inp('district', 'e.g. Clifton, DHA')}</CField>
+          <CField label="Priority">
+            <select style={ci} value={f.priority} onChange={e => set('priority', e.target.value)}>
+              {PRIORITIES.map(p => <option key={p}>{p}</option>)}
+            </select>
+          </CField>
+        </div>
+        <div style={grid(c4)}>
           <CField label="Product Category">
             <select style={ci} value={f.category} onChange={e => set('category', e.target.value)}>
               {PRODUCT_CATEGORIES.map(c => <option key={c}>{c}</option>)}
             </select>
           </CField>
-        </div>
-        <div style={grid(c4)}>
           <CField label="Issue Type *">
             <select style={ci} value={f.type} onChange={e => set('type', e.target.value)}>
               {COMPLAINT_TYPES.map(t => <option key={t}>{t}</option>)}
-            </select>
-          </CField>
-          <CField label="Priority">
-            <select style={ci} value={f.priority} onChange={e => set('priority', e.target.value)}>
-              {PRIORITIES.map(p => <option key={p}>{p}</option>)}
             </select>
           </CField>
           <CField label="Unit / Product ID">{inp('unitId', 'UNIT-0000')}</CField>
