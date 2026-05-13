@@ -11,7 +11,7 @@ export default function SettingsPage({ user, showToast }) {
     <div style={{ maxWidth: 700, display: 'flex', flexDirection: 'column', gap: 18 }}>
       <Card>
         <div style={{ fontWeight: 700, fontSize: 15, color: '#0F2044', marginBottom: 16, paddingBottom: 12, borderBottom: '1px solid #F1F5F9' }}>⚙ System Configuration</div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+        <div className="rg-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
           {[['System Name', systemName, setSystemName, 'text', 'Complaint Management System'],
             ['Version', 'v1.0', null, 'text', ''],
             ['Timezone', timezone, setTimezone, 'text', 'Asia/Karachi (PKT)'],
@@ -26,7 +26,7 @@ export default function SettingsPage({ user, showToast }) {
 
       <Card>
         <div style={{ fontWeight: 700, fontSize: 15, color: '#0F2044', marginBottom: 16, paddingBottom: 12, borderBottom: '1px solid #F1F5F9' }}>⏱ SLA Configuration (hours per complaint type)</div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+        <div className="rg-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
           {COMPLAINT_TYPES.map(t => (
             <div key={t}>
               <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>{t}</label>

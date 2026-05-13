@@ -8,7 +8,7 @@ export default function WorkshopPage({ complaints, users, user, onUpdate, onAddR
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 14 }}>
+      <div className="rg-4" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 14 }}>
         <KPICard label="Total Jobs" value={jobs.length} color="#1565C0" icon="🔧" />
         <KPICard label="In Progress" value={jobs.filter(c=>c.status==='In Progress').length} color="#FB8C00" icon="⚙" />
         <KPICard label="Pending Parts" value={jobs.filter(c=>c.status==='Pending Parts').length} color="#F4511E" icon="📦" />

@@ -3,6 +3,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { useComplaints } from '@/hooks/useComplaints'
 import { useToast } from '@/hooks/useToast'
 import { useLocalStorage } from '@/hooks/useLocalStorage'
+import { useMobile } from '@/hooks/useMobile'
 import { can, userCanSeeComplaint } from '@/utils/helpers'
 import { ToastContainer } from '@/components/shared'
 import LoginPage from '@/components/auth/LoginPage'
@@ -25,8 +26,13 @@ export default function App() {
   const [view, setView] = useState('dashboard')
   const [selectedId, setSelectedId] = useState(null)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const isMobile = useMobile()
 
-  // ─── SLA watcher ────────────────────────────────────────────────────────────
+  useEffect(() => {
+    if (isMobile) setSidebarOpen(false)
+  }, [isMobile])
+
   useEffect(() => {
     if (!user) return
     const run = () => {
@@ -52,15 +58,14 @@ export default function App() {
     return () => clearInterval(t)
   }, [user, checkSLABreaches])
 
-  // ─── Visible complaints for current user ────────────────────────────────────
   const visibleComplaints = complaints.filter(c => userCanSeeComplaint(user, c))
   const selectedComplaint = selectedId ? complaints.find(c => c.id === selectedId) : null
 
-  // ─── Navigation ─────────────────────────────────────────────────────────────
   const navigate = useCallback((v, id = null) => {
     setView(v)
     setSelectedId(id)
-  }, [])
+    if (isMobile) setSidebarOpen(false)
+  }, [isMobile])
 
   const openComplaint = useCallback((id) => navigate('complaint_detail', id), [navigate])
   const markNotifsRead = useCallback(() =>
@@ -79,14 +84,25 @@ export default function App() {
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: '#F0F4F8', fontFamily: 'Inter, system-ui, sans-serif' }}>
+      {/* Mobile backdrop */}
+      {isMobile && sidebarOpen && (
+        <div
+          onClick={() => setSidebarOpen(false)}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 999, backdropFilter: 'blur(2px)' }}
+        />
+      )}
+
       <Sidebar
         user={user}
         currentView={view}
         onNavigate={navigate}
-        collapsed={sidebarCollapsed}
+        collapsed={isMobile ? false : sidebarCollapsed}
         onToggleCollapse={() => setSidebarCollapsed(p => !p)}
         onLogout={logout}
         unreadCount={unreadCount}
+        isMobile={isMobile}
+        mobileOpen={sidebarOpen}
+        onMobileClose={() => setSidebarOpen(false)}
       />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
@@ -98,18 +114,20 @@ export default function App() {
           onMarkRead={markNotifsRead}
           onLogComplaint={can(user, 'logComplaint') ? () => navigate('log_complaint') : null}
           onOpenComplaint={openComplaint}
+          isMobile={isMobile}
+          onMenuToggle={() => setSidebarOpen(p => !p)}
         />
 
-        <main style={{ flex: 1, overflow: 'auto', padding: 20 }} className="fade-in" key={view + selectedId}>
+        <main className="fade-in main-pad" style={{ flex: 1, overflow: 'auto', padding: 20 }} key={view + selectedId}>
           {view === 'dashboard' && (
             <DashboardPage
               complaints={visibleComplaints}
               users={users}
               user={user}
               onOpenComplaint={openComplaint}
+              isMobile={isMobile}
             />
           )}
-
           {view === 'complaints' && (
             <ComplaintsPage
               complaints={visibleComplaints}
@@ -117,9 +135,9 @@ export default function App() {
               user={user}
               onSelect={openComplaint}
               onLog={() => navigate('log_complaint')}
+              isMobile={isMobile}
             />
           )}
-
           {view === 'complaint_detail' && selectedComplaint && (
             <ComplaintDetail
               complaint={selectedComplaint}
@@ -136,7 +154,6 @@ export default function App() {
               showToast={showToast}
             />
           )}
-
           {view === 'log_complaint' && (
             <LogComplaintPage
               users={users}
@@ -150,7 +167,6 @@ export default function App() {
               onCancel={() => navigate('complaints')}
             />
           )}
-
           {view === 'workshop' && (
             <WorkshopPage
               complaints={complaints}
@@ -163,7 +179,6 @@ export default function App() {
               showToast={showToast}
             />
           )}
-
           {view === 'users' && (
             <UsersPage
               users={users}
@@ -174,7 +189,6 @@ export default function App() {
               showToast={showToast}
             />
           )}
-
           {view === 'reports' && (
             <ReportsPage
               complaints={visibleComplaints}
@@ -182,7 +196,6 @@ export default function App() {
               user={user}
             />
           )}
-
           {view === 'settings' && (
             <SettingsPage user={user} showToast={showToast} />
           )}

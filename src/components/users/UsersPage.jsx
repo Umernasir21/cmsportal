@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { btn, inputStyle, Card, Avatar, RegionBadge, Badge, Modal, Field, FieldRow, TableWrap, THead, EmptyState } from '@/components/shared'
 import { ROLES, ROLE_META, REGIONS } from '@/data/constants'
+import { useMobile } from '@/hooks/useMobile'
 
 export default function UsersPage({ users, complaints, onAdd, onUpdate, onToggleActive, showToast }) {
+  const isMobile = useMobile()
   const [showForm, setShowForm] = useState(false)
   const [editUser, setEditUser] = useState(null)
   const [search, setSearch]     = useState('')
@@ -32,49 +34,62 @@ export default function UsersPage({ users, complaints, onAdd, onUpdate, onToggle
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ display: 'flex', gap: 12 }}>
+      <div className="users-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
           {stats.map(([l, v, c]) => (
-            <div key={l} style={{ background: '#fff', borderRadius: 10, border: '1px solid #E2E8F0', boxShadow: '0 1px 4px rgba(15,32,68,0.06)', padding: '12px 16px', borderLeft: `3px solid ${c}`, display: 'flex', gap: 12, alignItems: 'center' }}>
-              <div style={{ fontSize: 22, fontWeight: 800, color: c }}>{v}</div>
+            <div key={l} style={{ background: '#fff', borderRadius: 10, border: '1px solid #E2E8F0', boxShadow: '0 1px 4px rgba(15,32,68,0.06)', padding: '10px 14px', borderLeft: `3px solid ${c}`, display: 'flex', gap: 10, alignItems: 'center' }}>
+              <div style={{ fontSize: 20, fontWeight: 800, color: c }}>{v}</div>
               <div style={{ fontSize: 11, color: '#64748B' }}>{l}</div>
             </div>
           ))}
         </div>
-        <div style={{ display: 'flex', gap: 10 }}>
-          <input style={{ ...inputStyle, width: 200 }} placeholder="🔍 Search users…" value={search} onChange={e => setSearch(e.target.value)} />
-          <button style={btn('primary')} onClick={openAdd}>＋ Add User</button>
+        <div className="users-actions" style={{ display: 'flex', gap: 10 }}>
+          <input style={{ ...inputStyle, width: isMobile ? '100%' : 200, minWidth: 0 }} placeholder="🔍 Search users…" value={search} onChange={e => setSearch(e.target.value)} />
+          <button style={{ ...btn('primary'), flexShrink: 0 }} onClick={openAdd}>{isMobile ? '＋' : '＋ Add User'}</button>
         </div>
       </div>
 
       <TableWrap>
         <table>
-          <THead cols={['User','Email','Role','Region','Phone','Active Complaints','Status','Actions']} />
+          <THead cols={isMobile
+            ? ['User','Role','Status','Actions']
+            : ['User','Email','Role','Region','Phone','Active Complaints','Status','Actions']
+          } />
           <tbody>
-            {filtered.length === 0 && <tr><td colSpan={8}><EmptyState icon="👥" title="No users found" /></td></tr>}
+            {filtered.length === 0 && <tr><td colSpan={isMobile ? 4 : 8}><EmptyState icon="👥" title="No users found" /></td></tr>}
             {filtered.map((u, i) => {
               const rm = ROLE_META[u.role] || {}
               const activeCmps = complaints.filter(c => c.assignedTo === u.id && !['Resolved','Closed'].includes(c.status)).length
               return (
                 <tr key={u.id} style={{ borderBottom: '1px solid #F8FAFC', background: i%2 ? '#FAFBFC' : '#fff' }}>
-                  <td style={{ padding: '12px 16px' }}>
+                  <td style={{ padding: '12px 14px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                       <Avatar name={u.name} size={32} bg={u.active ? rm.color || '#1565C0' : '#94A3B8'} />
-                      <div><div style={{ fontWeight: 700, color: '#0F2044', fontSize: 13 }}>{u.name}</div><div style={{ fontSize: 10, color: '#94A3B8' }}>ID: {u.id}</div></div>
+                      <div>
+                        <div style={{ fontWeight: 700, color: '#0F2044', fontSize: 13 }}>{u.name}</div>
+                        {isMobile
+                          ? <div style={{ fontSize: 10, color: '#64748B' }}>{u.email}</div>
+                          : <div style={{ fontSize: 10, color: '#94A3B8' }}>ID: {u.id}</div>
+                        }
+                      </div>
                     </div>
                   </td>
-                  <td style={{ padding: '12px 16px', color: '#475569', fontSize: 12 }}>{u.email}</td>
-                  <td style={{ padding: '12px 16px' }}><Badge bg={rm.bg} color={rm.color}>{rm.label}</Badge></td>
-                  <td style={{ padding: '12px 16px' }}>{u.region ? <RegionBadge region={u.region} /> : <span style={{ color: '#CBD5E1', fontSize: 12 }}>All regions</span>}</td>
-                  <td style={{ padding: '12px 16px', color: '#64748B', fontSize: 12 }}>{u.phone || '—'}</td>
-                  <td style={{ padding: '12px 16px', textAlign: 'center' }}>
-                    {u.role === 'field_engineer' ? <span style={{ fontWeight: 700, color: activeCmps > 0 ? '#E65100' : '#94A3B8' }}>{activeCmps}</span> : <span style={{ color: '#CBD5E1' }}>—</span>}
-                  </td>
-                  <td style={{ padding: '12px 16px' }}><Badge bg={u.active ? '#E8F5E9' : '#FFEBEE'} color={u.active ? '#2E7D32' : '#C62828'}>{u.active ? 'Active' : 'Inactive'}</Badge></td>
-                  <td style={{ padding: '12px 16px' }}>
+                  {!isMobile && <td style={{ padding: '12px 14px', color: '#475569', fontSize: 12 }}>{u.email}</td>}
+                  <td style={{ padding: '12px 14px' }}><Badge bg={rm.bg} color={rm.color}>{isMobile ? rm.label?.split(' ')[0] : rm.label}</Badge></td>
+                  {!isMobile && <td style={{ padding: '12px 14px' }}>{u.region ? <RegionBadge region={u.region} /> : <span style={{ color: '#CBD5E1', fontSize: 12 }}>All</span>}</td>}
+                  {!isMobile && <td style={{ padding: '12px 14px', color: '#64748B', fontSize: 12 }}>{u.phone || '—'}</td>}
+                  {!isMobile && (
+                    <td style={{ padding: '12px 14px', textAlign: 'center' }}>
+                      {u.role === 'field_engineer' ? <span style={{ fontWeight: 700, color: activeCmps > 0 ? '#E65100' : '#94A3B8' }}>{activeCmps}</span> : <span style={{ color: '#CBD5E1' }}>—</span>}
+                    </td>
+                  )}
+                  <td style={{ padding: '12px 14px' }}><Badge bg={u.active ? '#E8F5E9' : '#FFEBEE'} color={u.active ? '#2E7D32' : '#C62828'}>{u.active ? 'Active' : 'Inactive'}</Badge></td>
+                  <td style={{ padding: '12px 14px' }}>
                     <div style={{ display: 'flex', gap: 6 }}>
-                      <button style={{ ...btn('ghost'), padding: '4px 10px', fontSize: 11 }} onClick={() => openEdit(u)}>Edit</button>
-                      <button style={{ ...btn(u.active ? 'danger' : 'success'), padding: '4px 10px', fontSize: 11 }} onClick={() => { onToggleActive(u.id); showToast(u.active ? 'User deactivated' : 'User activated') }}>{u.active ? 'Deactivate' : 'Activate'}</button>
+                      <button style={{ ...btn('ghost'), padding: '5px 10px', fontSize: 11 }} onClick={() => openEdit(u)}>Edit</button>
+                      <button style={{ ...btn(u.active ? 'danger' : 'success'), padding: '5px 10px', fontSize: 11 }} onClick={() => { onToggleActive(u.id); showToast(u.active ? 'User deactivated' : 'User activated') }}>
+                        {u.active ? (isMobile ? '✕' : 'Deactivate') : (isMobile ? '✓' : 'Activate')}
+                      </button>
                     </div>
                   </td>
                 </tr>

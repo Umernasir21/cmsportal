@@ -101,13 +101,13 @@ export default function ComplaintDetail({ complaint: c, complaints, users, user,
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 18, alignItems: 'start' }}>
+      <div className="rg-detail" style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 18, alignItems: 'start' }}>
         {/* LEFT */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           {/* Info card */}
           <Card>
             <div style={{ fontWeight: 700, fontSize: 14, color: '#0F2044', marginBottom: 14, paddingBottom: 10, borderBottom: '1px solid #F1F5F9' }}>📋 Complaint Information</div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12, marginBottom: 14 }}>
+            <div className="rg-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12, marginBottom: 14 }}>
               {[['Customer', c.customer],['Contact', c.contact],['Email', c.email],['City', c.city],['District', c.district],['Region', c.region],['Type', c.type],['Category', c.category],['Priority', c.priority],['Unit ID', c.unitId],['Serial No.', c.productSerial],['Warranty Expiry', c.warrantyExpiry ? fmt(c.warrantyExpiry, true) : ''],['Payment', c.paymentStatus],['Logged By', loggedBy?.name],['Logged At', fmt(c.loggedAt)],['SLA', `${c.slaHours}h`]].map(([l,v]) => infoRow(l, v))}
             </div>
             <div>
@@ -252,7 +252,7 @@ export default function ComplaintDetail({ complaint: c, complaints, users, user,
         </div>
 
         {/* RIGHT */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <div className="detail-right" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           {/* Status update */}
           {canStatus && (
             <Card padding={18}>

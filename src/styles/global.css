@@ -97,3 +97,72 @@ input, select, textarea, button { font-family: var(--font-sans); }
 /* Remove number input arrows */
 input[type=number]::-webkit-inner-spin-button,
 input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+
+/* ─── Responsive grid classes ────────────────────────────────────────── */
+.rg-kpi    { display: grid; grid-template-columns: repeat(5,1fr); gap: 14px; }
+.rg-4      { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; }
+.rg-3      { display: grid; grid-template-columns: repeat(3,1fr); gap: 14px; }
+.rg-2      { display: grid; grid-template-columns: repeat(2,1fr); gap: 14px; }
+.rg-detail { display: grid; grid-template-columns: 1fr 320px; gap: 18px; align-items: start; }
+
+/* ─── Mobile ─────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  html { font-size: 13px; }
+
+  /* Grids collapse */
+  .rg-kpi    { grid-template-columns: repeat(2,1fr) !important; gap: 10px !important; }
+  .rg-4      { grid-template-columns: repeat(2,1fr) !important; gap: 10px !important; }
+  .rg-3      { grid-template-columns: 1fr !important; gap: 12px !important; }
+  .rg-2      { grid-template-columns: 1fr !important; gap: 12px !important; }
+  .rg-detail { grid-template-columns: 1fr !important; gap: 14px !important; }
+
+  /* FieldRow */
+  .fr-3 { grid-template-columns: 1fr !important; }
+  .fr-2 { grid-template-columns: 1fr !important; }
+
+  /* Prevent iOS auto-zoom on focus */
+  input, select, textarea { font-size: 16px !important; }
+
+  /* Visibility helpers */
+  .hide-m { display: none !important; }
+  .show-m { display: flex !important; }
+
+  /* Modal full-screen */
+  .modal-box {
+    border-radius: 0 !important;
+    max-height: 100dvh !important;
+    height: 100dvh !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    margin: 0 !important;
+  }
+
+  /* Main content padding */
+  .main-pad { padding: 12px !important; }
+
+  /* Toast: full-width at bottom */
+  .toast-wrap {
+    bottom: 16px !important;
+    left: 16px !important;
+    right: 16px !important;
+    max-width: none !important;
+  }
+
+  /* Users page responsive header */
+  .users-header { flex-direction: column !important; align-items: stretch !important; gap: 12px !important; }
+  .users-actions { width: 100% !important; }
+  .users-actions input { flex: 1 !important; min-width: 0 !important; }
+
+  /* Reports tabs: horizontal scroll */
+  .tabs-row { flex-wrap: nowrap !important; overflow-x: auto !important; padding-bottom: 4px !important; }
+  .tabs-row::-webkit-scrollbar { display: none; }
+
+  /* Detail right panel: show above main content on mobile */
+  .detail-right { order: -1; }
+
+  /* Login: single column */
+  .login-grid { grid-template-columns: 1fr !important; }
+  .login-left  { display: none !important; }
+  .login-form  { padding: 28px 20px !important; }
+  .login-mobile-logo { display: flex !important; }
+}

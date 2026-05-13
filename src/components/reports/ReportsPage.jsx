@@ -4,20 +4,20 @@ import { STATUSES, COMPLAINT_TYPES, PRIORITIES, PRIORITY_META, REGIONS, REGION_M
 import { getSLA, fmt, exportToCSV, prepareExportData } from '@/utils/helpers'
 
 const TABS = [
-  { id: 'summary',   label: 'Summary',        icon: '📊' },
-  { id: 'pending',   label: 'Pending',         icon: '⏳' },
-  { id: 'resolved',  label: 'Resolved',        icon: '✅' },
-  { id: 'region',    label: 'By Region',       icon: '🗺' },
-  { id: 'fe',        label: 'FE Performance',  icon: '👷' },
-  { id: 'sla',       label: 'SLA Breaches',    icon: '🚨' },
-  { id: 'escalated', label: 'Escalations',     icon: '⬆' },
+  { id: 'summary',   label: 'Summary',       icon: '📊' },
+  { id: 'pending',   label: 'Pending',        icon: '⏳' },
+  { id: 'resolved',  label: 'Resolved',       icon: '✅' },
+  { id: 'region',    label: 'By Region',      icon: '🗺' },
+  { id: 'fe',        label: 'FE Performance', icon: '👷' },
+  { id: 'sla',       label: 'SLA Breaches',   icon: '🚨' },
+  { id: 'escalated', label: 'Escalations',    icon: '⬆' },
 ]
 
 function CTable({ data, users }) {
   if (!data.length) return <div style={{ marginTop: 14 }}><Card><EmptyState icon="📋" title="No data" /></Card></div>
   return (
     <TableWrap>
-      <table style={{ marginTop: 0 }}>
+      <table>
         <THead cols={['ID','Customer','Region','Type','Priority','Status','FE','SLA','Date']} />
         <tbody>
           {data.map((c, i) => {
@@ -105,13 +105,13 @@ export default function ReportsPage({ complaints, users, user }) {
           <option value="month">Last 30 Days</option>
         </select>
         <div style={{ marginLeft: 'auto', fontSize: 12, color: '#64748B', fontWeight: 600 }}>{filtered.length} complaints</div>
-        <button style={{ ...btn('ghost'), padding: '7px 12px', fontSize: 12 }} onClick={() => exportToCSV(prepareExportData(filtered, users), 'cms_report')}>⬇ Export CSV</button>
+        <button style={{ ...btn('ghost'), padding: '7px 12px', fontSize: 12 }} onClick={() => exportToCSV(prepareExportData(filtered, users), 'cms_report')}>⬇ Export</button>
       </div>
 
-      {/* Tabs */}
-      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 16 }}>
+      {/* Tabs — scrollable on mobile */}
+      <div className="tabs-row" style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 16 }}>
         {TABS.map(t => (
-          <button key={t.id} style={{ ...btn(tab === t.id ? 'primary' : 'ghost'), padding: '7px 14px', fontSize: 12 }} onClick={() => setTab(t.id)}>
+          <button key={t.id} style={{ ...btn(tab === t.id ? 'primary' : 'ghost'), padding: '7px 14px', fontSize: 12, flexShrink: 0 }} onClick={() => setTab(t.id)}>
             {t.icon} {t.label}
           </button>
         ))}
@@ -119,21 +119,21 @@ export default function ReportsPage({ complaints, users, user }) {
 
       {tab === 'summary' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: 12 }}>
+          <div className="rg-kpi" style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: 12 }}>
             {[['Total',filtered.length,'#1565C0','📋'],['Open',open.length,'#FB8C00','⏳'],['Resolved',resolved.length,'#43A047','✅'],['Escalated',escalated.length,'#E53935','🚨'],['SLA Breach',slaBreach.length,'#7B1FA2','⏱']].map(([l,v,c,i]) => (
               <Card key={l} style={{ textAlign: 'center' }}>
                 <div style={{ fontSize: 22, marginBottom: 6 }}>{i}</div>
-                <div style={{ fontSize: 28, fontWeight: 800, color: c, lineHeight: 1 }}>{v}</div>
-                <div style={{ fontSize: 12, color: '#64748B', marginTop: 4 }}>{l}</div>
+                <div style={{ fontSize: 26, fontWeight: 800, color: c, lineHeight: 1 }}>{v}</div>
+                <div style={{ fontSize: 11, color: '#64748B', marginTop: 4 }}>{l}</div>
               </Card>
             ))}
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+          <div className="rg-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
             <Card>
               <div style={{ fontWeight: 700, fontSize: 13, color: '#0F2044', marginBottom: 14 }}>By Complaint Type</div>
               {COMPLAINT_TYPES.map(t => { const n = filtered.filter(c=>c.type===t).length; if (!n) return null; return (
                 <div key={t} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 9 }}>
-                  <div style={{ fontSize: 11, color: '#475569', width: 160, flexShrink: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t}</div>
+                  <div style={{ fontSize: 11, color: '#475569', width: 130, flexShrink: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t}</div>
                   <div style={{ flex: 1, background: '#F1F5F9', borderRadius: 4, height: 8 }}><div style={{ height: '100%', background: '#1565C0', borderRadius: 4, width: `${filtered.length?(n/filtered.length)*100:0}%` }} /></div>
                   <span style={{ fontSize: 12, fontWeight: 700, color: '#1565C0', width: 22, textAlign: 'right' }}>{n}</span>
                 </div>

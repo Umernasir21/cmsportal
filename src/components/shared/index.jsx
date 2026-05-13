@@ -71,7 +71,7 @@ export function Modal({ title, onClose, children, width = 580 }) {
       style={{ position: 'fixed', inset: 0, background: 'rgba(10,20,40,0.65)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
       onClick={e => e.target === e.currentTarget && onClose()}
     >
-      <div className="fade-in" style={{ background: '#fff', borderRadius: 16, width: '100%', maxWidth: width, maxHeight: '92vh', overflow: 'auto', boxShadow: '0 24px 80px rgba(0,0,0,0.25)' }}>
+      <div className="modal-box fade-in" style={{ background: '#fff', borderRadius: 16, width: '100%', maxWidth: width, maxHeight: '92vh', overflow: 'auto', boxShadow: '0 24px 80px rgba(0,0,0,0.25)' }}>
         <div style={{ padding: '18px 24px', borderBottom: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, background: '#fff', zIndex: 1 }}>
           <div style={{ fontWeight: 800, fontSize: 15, color: '#0F2044' }}>{title}</div>
           <button onClick={onClose} style={{ ...btn('ghost'), padding: '4px 10px', fontSize: 20, lineHeight: 1 }}>✕</button>
@@ -85,7 +85,7 @@ export function Modal({ title, onClose, children, width = 580 }) {
 // ─── TOAST CONTAINER ──────────────────────────────────────────────────────────
 export function ToastContainer({ toasts, dismiss }) {
   return (
-    <div style={{ position: 'fixed', bottom: 24, right: 24, zIndex: 9999, display: 'flex', flexDirection: 'column', gap: 8, maxWidth: 360 }}>
+    <div className="toast-wrap" style={{ position: 'fixed', bottom: 24, right: 24, zIndex: 9999, display: 'flex', flexDirection: 'column', gap: 8, maxWidth: 360 }}>
       {toasts.map(t => (
         <div key={t.id} className="fade-in" onClick={() => dismiss(t.id)} style={{
           background: t.type === 'error' ? '#C62828' : t.type === 'warning' ? '#E65100' : '#1B5E20',
@@ -116,7 +116,7 @@ export function ConfirmDialog({ title, message, onConfirm, onCancel, danger = fa
   )
 }
 
-// ─── BUTTON STYLES (exported helper) ─────────────────────────────────────────
+// ─── BUTTON STYLES ────────────────────────────────────────────────────────────
 export function btn(variant = 'primary') {
   const base = { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, cursor: 'pointer', border: 'none', borderRadius: 8, fontWeight: 600, fontSize: 13, padding: '8px 16px', lineHeight: 1, transition: 'all .15s', fontFamily: 'inherit' }
   const variants = {
@@ -146,7 +146,7 @@ export function Field({ label, error, children }) {
 
 export function FieldRow({ children, cols = 2 }) {
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: 14, marginBottom: 14 }}>
+    <div className={`fr-${cols}`} style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: 14, marginBottom: 14 }}>
       {children}
     </div>
   )
@@ -198,7 +198,7 @@ export function Spinner() {
 export function TableWrap({ children }) {
   return (
     <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #E2E8F0', boxShadow: '0 1px 4px rgba(15,32,68,0.06)', overflow: 'hidden' }}>
-      <div style={{ overflowX: 'auto' }}>
+      <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
         {children}
       </div>
     </div>
@@ -222,12 +222,12 @@ export function THead({ cols }) {
 // ─── KPI CARD ────────────────────────────────────────────────────────────────
 export function KPICard({ label, value, color, icon, sub, onClick }) {
   return (
-    <div onClick={onClick} style={{ background: '#fff', borderRadius: 12, border: '1px solid #E2E8F0', boxShadow: '0 1px 4px rgba(15,32,68,0.06)', padding: '18px 20px', borderLeft: `4px solid ${color}`, cursor: onClick ? 'pointer' : 'default', transition: 'all .15s' }}
+    <div onClick={onClick} style={{ background: '#fff', borderRadius: 12, border: '1px solid #E2E8F0', boxShadow: '0 1px 4px rgba(15,32,68,0.06)', padding: '16px 18px', borderLeft: `4px solid ${color}`, cursor: onClick ? 'pointer' : 'default', transition: 'all .15s' }}
       onMouseEnter={e => onClick && (e.currentTarget.style.boxShadow = '0 4px 16px rgba(15,32,68,0.12)')}
       onMouseLeave={e => onClick && (e.currentTarget.style.boxShadow = '0 1px 4px rgba(15,32,68,0.06)')}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <div style={{ fontSize: 30, fontWeight: 800, color, lineHeight: 1 }}>{value}</div>
-        <div style={{ fontSize: 24 }}>{icon}</div>
+        <div style={{ fontSize: 28, fontWeight: 800, color, lineHeight: 1 }}>{value}</div>
+        <div style={{ fontSize: 22 }}>{icon}</div>
       </div>
       <div style={{ fontSize: 12, color: '#64748B', fontWeight: 600, marginTop: 6 }}>{label}</div>
       {sub && <div style={{ fontSize: 11, color: '#94A3B8', marginTop: 2 }}>{sub}</div>}
