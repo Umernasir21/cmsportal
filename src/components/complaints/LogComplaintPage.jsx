@@ -75,7 +75,7 @@ export default function LogComplaintPage({ users, user, complaints, onSubmit, on
   )
 
   return (
-    <div style={{ maxWidth: 1040, margin: '0 auto' }}>
+    <div style={{ maxWidth: 1200, margin: '0 auto' }}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
         <button style={{ ...btn('ghost'), padding: '5px 10px', fontSize: 11 }} onClick={onCancel}>← Back</button>
