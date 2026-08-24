@@ -4,8 +4,9 @@ import { useComplaints } from '@/hooks/useComplaints'
 import { useToast } from '@/hooks/useToast'
 import { useLocalStorage } from '@/hooks/useLocalStorage'
 import { useMobile } from '@/hooks/useMobile'
+import { useDropdownConfig } from '@/hooks/useDropdownConfig'
 import { can, userCanSeeComplaint } from '@/utils/helpers'
-import { ToastContainer } from '@/components/shared'
+import { ToastContainer, Spinner } from '@/components/shared'
 import LoginPage from '@/components/auth/LoginPage'
 import Sidebar from '@/components/shared/Sidebar'
 import TopBar from '@/components/shared/TopBar'
@@ -19,12 +20,14 @@ import ReportsPage from '@/components/reports/ReportsPage'
 import SettingsPage from '@/components/settings/SettingsPage'
 
 export default function App() {
-  const { user, users, login, logout, addUser, updateUser, toggleUserActive } = useAuth()
-  const { complaints, addComplaint, updateComplaint, addTimelineNote, addRepairLog, submitFSR, checkSLABreaches } = useComplaints()
+  const { user, users, usersLoading, login, logout, addUser, updateUser, toggleUserActive } = useAuth()
+  const { complaints, loading: complaintsLoading, addComplaint, updateComplaint, addTimelineNote, addRepairLog, submitFSR, checkSLABreaches } = useComplaints()
   const { toasts, show: showToast, dismiss } = useToast()
+  const dropdownConfig = useDropdownConfig()
   const [notifications, setNotifications] = useLocalStorage('cms_notifications', [])
   const [view, setView] = useState('dashboard')
   const [selectedId, setSelectedId] = useState(null)
+  const [complaintsFilter, setComplaintsFilter] = useState(null)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const isMobile = useMobile()
@@ -64,12 +67,26 @@ export default function App() {
   const navigate = useCallback((v, id = null) => {
     setView(v)
     setSelectedId(id)
+    if (v !== 'complaints') setComplaintsFilter(null)
     if (isMobile) setSidebarOpen(false)
   }, [isMobile])
 
   const openComplaint = useCallback((id) => navigate('complaint_detail', id), [navigate])
+  const navigateToComplaints = useCallback((filter = null) => {
+    setComplaintsFilter(filter)
+    navigate('complaints')
+  }, [navigate])
   const markNotifsRead = useCallback(() =>
     setNotifications(prev => prev.map(n => ({ ...n, read: true }))), [setNotifications])
+
+  if (usersLoading || complaintsLoading) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', gap: 12, background: '#F0F4F8' }}>
+        <Spinner />
+        <div style={{ fontSize: 13, color: '#64748B', fontWeight: 600 }}>Loading CMS Portal…</div>
+      </div>
+    )
+  }
 
   if (!user) {
     return <LoginPage onLogin={(email, pass) => {
@@ -125,6 +142,7 @@ export default function App() {
               users={users}
               user={user}
               onOpenComplaint={openComplaint}
+              onNavigateFiltered={navigateToComplaints}
               isMobile={isMobile}
             />
           )}
@@ -135,6 +153,8 @@ export default function App() {
               user={user}
               onSelect={openComplaint}
               onLog={() => navigate('log_complaint')}
+              initialFilter={complaintsFilter}
+              dropdownConfig={dropdownConfig}
               isMobile={isMobile}
             />
           )}
@@ -147,10 +167,10 @@ export default function App() {
               onBack={() => navigate('complaints')}
               onUpdate={(id, changes, label, note) =>
                 updateComplaint(id, changes, label, note, user.name)}
-              onAddNote={(id, note) => addTimelineNote(id, note, user.name)}
+              onAddNote={(id, note, files) => addTimelineNote(id, note, user.name, files)}
               onAddRepairLog={(id, action) => addRepairLog(id, action, user.name)}
-              onSubmitFSR={(id, fsr, notes, path) =>
-                submitFSR(id, fsr, notes, path, user.name)}
+              onSubmitFSR={(id, fsr, notes, path, files) =>
+                submitFSR(id, fsr, notes, path, user.name, files)}
               showToast={showToast}
             />
           )}
@@ -159,6 +179,7 @@ export default function App() {
               users={users}
               user={user}
               complaints={complaints}
+              dropdownConfig={dropdownConfig}
               onSubmit={(data) => {
                 const id = addComplaint(data, user)
                 showToast(`✓ Complaint ${id} logged successfully`)
@@ -197,7 +218,7 @@ export default function App() {
             />
           )}
           {view === 'settings' && (
-            <SettingsPage user={user} showToast={showToast} />
+            <SettingsPage user={user} showToast={showToast} dropdownConfig={dropdownConfig} />
           )}
         </main>
       </div>

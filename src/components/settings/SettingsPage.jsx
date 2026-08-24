@@ -1,11 +1,38 @@
 import { useState } from 'react'
-import { btn, inputStyle, Card } from '@/components/shared'
-import { SLA_HOURS, COMPLAINT_TYPES } from '@/data/constants'
+import { btn, inputStyle, Card, Badge } from '@/components/shared'
+import { SLA_HOURS } from '@/data/constants'
 
-export default function SettingsPage({ user, showToast }) {
+function DropdownOptionsEditor({ label, options, onAdd, onRemove }) {
+  const [value, setValue] = useState('')
+  const submit = () => {
+    if (!value.trim()) return
+    onAdd(value)
+    setValue('')
+  }
+  return (
+    <div>
+      <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>{label}</label>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 10 }}>
+        {options.map(o => (
+          <Badge key={o} bg="#F1F5F9" color="#334155" border="#E2E8F0">
+            {o}
+            <span style={{ marginLeft: 4, cursor: 'pointer', color: '#C62828', fontWeight: 700 }} onClick={() => onRemove(o)}>✕</span>
+          </Badge>
+        ))}
+      </div>
+      <div style={{ display: 'flex', gap: 8 }}>
+        <input style={{ ...inputStyle, flex: 1 }} value={value} placeholder={`New ${label.toLowerCase()} option…`} onChange={e => setValue(e.target.value)} onKeyDown={e => e.key === 'Enter' && submit()} />
+        <button style={btn('primary')} onClick={submit}>+ Add</button>
+      </div>
+    </div>
+  )
+}
+
+export default function SettingsPage({ user, showToast, dropdownConfig }) {
   const [slaConfig, setSlaConfig] = useState({ ...SLA_HOURS })
   const [systemName, setSystemName] = useState('Complaint Management System')
   const [timezone, setTimezone] = useState('Asia/Karachi')
+  const isAdmin = user.role === 'admin'
 
   return (
     <div style={{ maxWidth: 700, display: 'flex', flexDirection: 'column', gap: 18 }}>
@@ -27,7 +54,7 @@ export default function SettingsPage({ user, showToast }) {
       <Card>
         <div style={{ fontWeight: 700, fontSize: 15, color: '#0F2044', marginBottom: 16, paddingBottom: 12, borderBottom: '1px solid #F1F5F9' }}>⏱ SLA Configuration (hours per complaint type)</div>
         <div className="rg-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-          {COMPLAINT_TYPES.map(t => (
+          {(dropdownConfig?.complaintTypes || []).map(t => (
             <div key={t}>
               <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>{t}</label>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -38,6 +65,26 @@ export default function SettingsPage({ user, showToast }) {
           ))}
         </div>
       </Card>
+
+      {isAdmin && dropdownConfig && (
+        <Card>
+          <div style={{ fontWeight: 700, fontSize: 15, color: '#0F2044', marginBottom: 16, paddingBottom: 12, borderBottom: '1px solid #F1F5F9' }}>📋 Dropdown Options</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+            <DropdownOptionsEditor
+              label="Complaint Types"
+              options={dropdownConfig.complaintTypes}
+              onAdd={v => { if (dropdownConfig.addOption('complaintTypes', v)) showToast(`Added complaint type "${v}"`) }}
+              onRemove={v => { dropdownConfig.removeOption('complaintTypes', v); showToast(`Removed "${v}"`) }}
+            />
+            <DropdownOptionsEditor
+              label="Product Categories"
+              options={dropdownConfig.productCategories}
+              onAdd={v => { if (dropdownConfig.addOption('productCategories', v)) showToast(`Added product category "${v}"`) }}
+              onRemove={v => { dropdownConfig.removeOption('productCategories', v); showToast(`Removed "${v}"`) }}
+            />
+          </div>
+        </Card>
+      )}
 
       <Card>
         <div style={{ fontWeight: 700, fontSize: 15, color: '#0F2044', marginBottom: 16, paddingBottom: 12, borderBottom: '1px solid #F1F5F9' }}>🔔 Notification Settings</div>
@@ -63,10 +110,9 @@ export default function SettingsPage({ user, showToast }) {
         <div style={{ fontWeight: 700, fontSize: 15, color: '#0F2044', marginBottom: 16, paddingBottom: 12, borderBottom: '1px solid #F1F5F9' }}>🗄 Data Management</div>
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
           <button style={{ ...btn('ghost'), fontSize: 12 }} onClick={() => showToast('Export started — check downloads')}>⬇ Export All Data (CSV)</button>
-          <button style={{ ...btn('ghost'), fontSize: 12 }} onClick={() => showToast('Backup created')}>💾 Create Backup</button>
-          <button style={{ ...btn('danger'), fontSize: 12 }} onClick={() => { if (window.confirm('Reset all data to seed? This cannot be undone.')) { localStorage.clear(); window.location.reload() } }}>🗑 Reset to Seed Data</button>
+          <button style={{ ...btn('ghost'), fontSize: 12 }} onClick={() => { if (window.confirm('Clear this device\'s local session and cached preferences? Shared complaint/user data is unaffected.')) { localStorage.clear(); window.location.reload() } }}>🧹 Clear Local Session</button>
         </div>
-        <div style={{ marginTop: 12, fontSize: 12, color: '#94A3B8' }}>Data is stored in browser localStorage. For production, connect to a backend database.</div>
+        <div style={{ marginTop: 12, fontSize: 12, color: '#94A3B8' }}>Complaints, users, and dropdown options are stored in a shared Supabase database and sync live to everyone. To bulk-reset shared data, use the Supabase dashboard's Table Editor directly.</div>
       </Card>
 
       <div style={{ display: 'flex', justifyContent: 'flex-end' }}>

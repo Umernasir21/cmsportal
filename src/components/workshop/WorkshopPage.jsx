@@ -1,22 +1,36 @@
 import { useState } from 'react'
 import { btn, Card, StatusBadge, RegionBadge, Badge, TableWrap, THead, EmptyState, KPICard } from '@/components/shared'
+import { STATUSES } from '@/data/constants'
 import { fmt } from '@/utils/helpers'
 
 export default function WorkshopPage({ complaints, users, user, onUpdate, onAddRepairLog, onOpenComplaint, showToast }) {
   const [repairInputs, setRepairInputs] = useState({})
-  const jobs = complaints.filter(c => c.workshopAssigned || (c.type === 'Unit Faulty' && ['In Progress','Pending Parts','Escalated'].includes(c.status)))
+  const [statusFilter, setStatusFilter] = useState('All')
+  const allJobs = complaints.filter(c => c.workshopAssigned || (c.type === 'Unit Faulty' && ['In Progress','Pending Parts','Escalated'].includes(c.status)))
+  const jobStatuses = STATUSES.filter(s => allJobs.some(c => c.status === s))
+  const jobs = statusFilter === 'All' ? allJobs : allJobs.filter(c => c.status === statusFilter)
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
       <div className="rg-4" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 14 }}>
-        <KPICard label="Total Jobs" value={jobs.length} color="#1565C0" icon="🔧" />
-        <KPICard label="In Progress" value={jobs.filter(c=>c.status==='In Progress').length} color="#FB8C00" icon="⚙" />
-        <KPICard label="Pending Parts" value={jobs.filter(c=>c.status==='Pending Parts').length} color="#F4511E" icon="📦" />
-        <KPICard label="Backup Installed" value={jobs.filter(c=>c.backupUnitInstalled).length} color="#43A047" icon="✅" />
+        <KPICard label="Total Jobs" value={allJobs.length} color="#1565C0" icon="🔧" onClick={() => setStatusFilter('All')} />
+        <KPICard label="In Progress" value={allJobs.filter(c=>c.status==='In Progress').length} color="#FB8C00" icon="⚙" onClick={() => setStatusFilter('In Progress')} />
+        <KPICard label="Pending Parts" value={allJobs.filter(c=>c.status==='Pending Parts').length} color="#F4511E" icon="📦" onClick={() => setStatusFilter('Pending Parts')} />
+        <KPICard label="Backup Installed" value={allJobs.filter(c=>c.backupUnitInstalled).length} color="#43A047" icon="✅" />
       </div>
 
       <TableWrap>
-        <div style={{ padding: '14px 18px', borderBottom: '1px solid #F1F5F9', fontWeight: 700, fontSize: 13, color: '#0F2044' }}>Workshop Repair Jobs</div>
+        <div style={{ padding: '14px 18px', borderBottom: '1px solid #F1F5F9', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
+          <div style={{ fontWeight: 700, fontSize: 13, color: '#0F2044' }}>Workshop Repair Jobs</div>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            <button style={{ ...btn(statusFilter === 'All' ? 'primary' : 'ghost'), padding: '5px 12px', fontSize: 11 }} onClick={() => setStatusFilter('All')}>All ({allJobs.length})</button>
+            {jobStatuses.map(s => (
+              <button key={s} style={{ ...btn(statusFilter === s ? 'primary' : 'ghost'), padding: '5px 12px', fontSize: 11 }} onClick={() => setStatusFilter(s)}>
+                {s} ({allJobs.filter(c => c.status === s).length})
+              </button>
+            ))}
+          </div>
+        </div>
         <table>
           <THead cols={['ID','Customer','Region','Unit ID','Status','Backup','Workshop Mgr','Last Entry','Action']} />
           <tbody>

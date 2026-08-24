@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { btn, inputStyle, labelStyle, Card, StatusBadge, PriorityBadge, RegionBadge, Badge, Modal } from '@/components/shared'
 import { STATUSES, RESOLUTION_PATHS, PAYMENT_STATUSES, REGION_META } from '@/data/constants'
-import { can, getSLA, isInWarranty, fmt, now } from '@/utils/helpers'
+import { can, getSLA, isInWarranty, fmt, now, filesToAttachments } from '@/utils/helpers'
 
 export default function ComplaintDetail({ complaint: c, complaints, users, user, onBack, onUpdate, onAddNote, onAddRepairLog, onSubmitFSR, showToast }) {
   const [newStatus, setNewStatus]   = useState(c.status)
@@ -15,6 +15,9 @@ export default function ComplaintDetail({ complaint: c, complaints, users, user,
   const [timelineNote, setTimelineNote] = useState('')
   const [showNote, setShowNote]     = useState(false)
   const [payStatus, setPayStatus]   = useState(c.paymentStatus)
+  const [fsrFiles, setFsrFiles]     = useState([])
+  const [noteFiles, setNoteFiles]   = useState([])
+  const [uploading, setUploading]   = useState(false)
 
   const fe         = users.find(u => u.id === c.assignedTo)
   const loggedBy   = users.find(u => u.id === c.loggedBy)
@@ -46,16 +49,36 @@ export default function ComplaintDetail({ complaint: c, complaints, users, user,
 
   const handleFSR = () => {
     if (!fsrText.trim()) { showToast('FSR summary cannot be empty', 'error'); return }
-    onSubmitFSR(c.id, fsrText, fsrNotes, resPath)
-    setShowFsr(false)
+    onSubmitFSR(c.id, fsrText, fsrNotes, resPath, fsrFiles)
+    setShowFsr(false); setFsrFiles([])
     showToast('FSR submitted. Complaint marked Resolved.')
   }
 
+  const handleFsrFiles = async e => {
+    const list = e.target.files
+    if (!list?.length) return
+    setUploading(true)
+    const newFiles = await filesToAttachments(list, 'FSR', user.name)
+    setFsrFiles(p => [...p, ...newFiles])
+    setUploading(false)
+    e.target.value = ''
+  }
+
   const handleNote = () => {
-    if (!timelineNote.trim()) return
-    onAddNote(c.id, timelineNote)
-    setTimelineNote(''); setShowNote(false)
+    if (!timelineNote.trim() && noteFiles.length === 0) return
+    onAddNote(c.id, timelineNote, noteFiles)
+    setTimelineNote(''); setNoteFiles([]); setShowNote(false)
     showToast('Note added to timeline')
+  }
+
+  const handleNoteFiles = async (e) => {
+    const list = e.target.files
+    if (!list?.length) return
+    setUploading(true)
+    const newFiles = await filesToAttachments(list, 'Comment', user.name)
+    setNoteFiles(p => [...p, ...newFiles])
+    setUploading(false)
+    e.target.value = ''
   }
 
   const handleRepair = () => {
@@ -196,9 +219,28 @@ export default function ComplaintDetail({ complaint: c, complaints, users, user,
                   <label style={labelStyle}>Additional Notes</label>
                   <textarea style={{ ...inputStyle, height: 60, resize: 'vertical' }} value={fsrNotes} onChange={e => setFsrNotes(e.target.value)} placeholder="Customer feedback, follow-up, warranty notes…" />
                 </div>
+                <div style={{ marginBottom: 14 }}>
+                  <label style={labelStyle}>Attach Files</label>
+                  <label style={{ ...btn('ghost'), padding: '7px 14px', fontSize: 12, display: 'inline-flex', cursor: 'pointer' }}>
+                    {uploading ? 'Uploading…' : '+ Attach File'}
+                    <input type="file" multiple style={{ display: 'none' }} onChange={handleFsrFiles} disabled={uploading} />
+                  </label>
+                  {fsrFiles.length > 0 && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 }}>
+                      {fsrFiles.map((f, i) => (
+                        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 10px', background: '#F8FAFC', borderRadius: 6, border: '1px solid #F1F5F9' }}>
+                          <span style={{ fontSize: 16 }}>{f.type === 'image' ? '🖼' : '📄'}</span>
+                          <div style={{ flex: 1, fontSize: 12, color: '#0F2044', fontWeight: 600 }}>{f.name}</div>
+                          <div style={{ fontSize: 11, color: '#94A3B8' }}>{f.size}</div>
+                          <span style={{ fontSize: 11, color: '#C62828', cursor: 'pointer', fontWeight: 600 }} onClick={() => setFsrFiles(p => p.filter((_, idx) => idx !== i))}>Remove</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
                 <div style={{ display: 'flex', gap: 8 }}>
                   <button style={btn('success')} onClick={handleFSR}>Submit FSR & Mark Resolved</button>
-                  <button style={btn('ghost')} onClick={() => setShowFsr(false)}>Cancel</button>
+                  <button style={btn('ghost')} onClick={() => { setShowFsr(false); setFsrFiles([]) }}>Cancel</button>
                 </div>
               </div>
             )}
@@ -212,9 +254,11 @@ export default function ComplaintDetail({ complaint: c, complaints, users, user,
                 <span style={{ fontSize: 20 }}>{a.type === 'image' ? '🖼' : '📄'}</span>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 12, fontWeight: 600, color: '#0F2044' }}>{a.name}</div>
-                  <div style={{ fontSize: 11, color: '#94A3B8' }}>{a.size} · {fmt(a.at)}</div>
+                  <div style={{ fontSize: 11, color: '#94A3B8' }}>{a.size} · {a.tag ? `${a.tag} · ` : ''}{fmt(a.at)}</div>
                 </div>
-                <span style={{ fontSize: 11, color: '#1565C0', cursor: 'pointer', fontWeight: 600 }}>View</span>
+                {a.data && (
+                  <span style={{ fontSize: 11, color: '#1565C0', cursor: 'pointer', fontWeight: 600 }} onClick={() => window.open(a.data, '_blank')}>View</span>
+                )}
               </div>
             )) : <div style={{ color: '#94A3B8', fontSize: 13, textAlign: 'center', padding: '14px 0' }}>No attachments uploaded.</div>}
           </Card>
@@ -226,10 +270,24 @@ export default function ComplaintDetail({ complaint: c, complaints, users, user,
               <button style={{ ...btn('ghost'), padding: '5px 10px', fontSize: 11 }} onClick={() => setShowNote(!showNote)}>+ Note</button>
             </div>
             {showNote && (
-              <div style={{ marginBottom: 16, display: 'flex', gap: 8 }}>
-                <input style={{ ...inputStyle, flex: 1 }} value={timelineNote} onChange={e => setTimelineNote(e.target.value)} placeholder="Add a note…" onKeyDown={e => e.key === 'Enter' && handleNote()} />
-                <button style={btn('primary')} onClick={handleNote}>Add</button>
-                <button style={btn('ghost')} onClick={() => { setShowNote(false); setTimelineNote('') }}>✕</button>
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <input style={{ ...inputStyle, flex: 1 }} value={timelineNote} onChange={e => setTimelineNote(e.target.value)} placeholder="Add a note…" onKeyDown={e => e.key === 'Enter' && handleNote()} />
+                  <button style={btn('primary')} onClick={handleNote}>Add</button>
+                  <button style={btn('ghost')} onClick={() => { setShowNote(false); setTimelineNote(''); setNoteFiles([]) }}>✕</button>
+                </div>
+                <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                  <label style={{ ...btn('ghost'), padding: '5px 10px', fontSize: 11, display: 'inline-flex', cursor: 'pointer' }}>
+                    {uploading ? 'Uploading…' : '📎 Attach Files'}
+                    <input type="file" multiple style={{ display: 'none' }} onChange={handleNoteFiles} disabled={uploading} />
+                  </label>
+                  {noteFiles.map((f, i) => (
+                    <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, background: '#F8FAFC', border: '1px solid #F1F5F9', borderRadius: 12, padding: '3px 8px', color: '#475569' }}>
+                      {f.type === 'image' ? '🖼' : '📄'} {f.name}
+                      <span style={{ color: '#C62828', cursor: 'pointer', fontWeight: 700 }} onClick={() => setNoteFiles(p => p.filter((_, idx) => idx !== i))}>✕</span>
+                    </span>
+                  ))}
+                </div>
               </div>
             )}
             {[...c.timeline].reverse().map((t, i, arr) => (

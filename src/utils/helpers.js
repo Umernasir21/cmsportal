@@ -116,7 +116,7 @@ export const buildNewComplaint = (formData, user, existingComplaints) => {
     slaHours:      SLA_HOURS[formData.type] || 48,
     fsr:           null,
     fsrNotes:      '',
-    attachments:   [],
+    attachments:   formData.attachments || [],
     resolutionPath:'',
     workshopAssigned: null,
     backupUnitInstalled: false,
@@ -127,6 +127,26 @@ export const buildNewComplaint = (formData, user, existingComplaints) => {
     ],
   }
 }
+
+// ─── FILE ATTACHMENTS ─────────────────────────────────────────────────────────
+const fileToAttachment = (file, tag, by) =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve({
+      name: file.name,
+      size: `${(file.size / 1024).toFixed(1)} KB`,
+      type: file.type.startsWith('image/') ? 'image' : 'file',
+      data: reader.result,
+      tag,
+      by,
+      at: now(),
+    })
+    reader.onerror = reject
+    reader.readAsDataURL(file)
+  })
+
+export const filesToAttachments = (fileList, tag, by) =>
+  Promise.all(Array.from(fileList || []).map(f => fileToAttachment(f, tag, by)))
 
 // ─── EXPORT HELPERS ───────────────────────────────────────────────────────────
 export const exportToCSV = (data, filename) => {

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { btn, inputStyle, Card } from '@/components/shared'
 import { REGIONS, COMPLAINT_TYPES, PRODUCT_CATEGORIES, PRIORITIES, SLA_HOURS, REGION_META } from '@/data/constants'
 import { useMobile } from '@/hooks/useMobile'
+import { filesToAttachments } from '@/utils/helpers'
 
 // ── Static styles (never change, safe at module level) ────────────────────────
 const ci = { ...inputStyle, padding: '6px 9px', fontSize: 12 }
@@ -19,9 +20,11 @@ function CField({ label, error, children }) {
   )
 }
 
-export default function LogComplaintPage({ users, user, complaints, onSubmit, onCancel }) {
+export default function LogComplaintPage({ users, user, complaints, dropdownConfig, onSubmit, onCancel }) {
   const isPhone  = useMobile(600)   // < 600px  → 1 column
   const isTablet = useMobile(1024)  // < 1024px → 2 columns
+  const types      = dropdownConfig?.complaintTypes || COMPLAINT_TYPES
+  const categories  = dropdownConfig?.productCategories || PRODUCT_CATEGORIES
 
   const [f, setF] = useState({
     complaintNo: '', customer: '', contact: '', email: '',
@@ -33,6 +36,19 @@ export default function LogComplaintPage({ users, user, complaints, onSubmit, on
     description: '',
   })
   const [errors, setErrors] = useState({})
+  const [files, setFiles] = useState([])
+  const [uploading, setUploading] = useState(false)
+
+  const handleFiles = async (e) => {
+    const list = e.target.files
+    if (!list?.length) return
+    setUploading(true)
+    const newFiles = await filesToAttachments(list, 'Initial Log', user.name)
+    setFiles(p => [...p, ...newFiles])
+    setUploading(false)
+    e.target.value = ''
+  }
+  const removeFile = (i) => setFiles(p => p.filter((_, idx) => idx !== i))
 
   const set = (k, v) => setF(p => ({ ...p, [k]: v }))
   const regionFEs = users.filter(u => u.role === 'field_engineer' && u.region === f.region)
@@ -120,12 +136,12 @@ export default function LogComplaintPage({ users, user, complaints, onSubmit, on
         <div style={grid(c4)}>
           <CField label="Product Category">
             <select style={ci} value={f.category} onChange={e => set('category', e.target.value)}>
-              {PRODUCT_CATEGORIES.map(c => <option key={c}>{c}</option>)}
+              {categories.map(c => <option key={c}>{c}</option>)}
             </select>
           </CField>
           <CField label="Issue Type *">
             <select style={ci} value={f.type} onChange={e => set('type', e.target.value)}>
-              {COMPLAINT_TYPES.map(t => <option key={t}>{t}</option>)}
+              {types.map(t => <option key={t}>{t}</option>)}
             </select>
           </CField>
           <CField label="Unit / Product ID">{inp('unitId', 'UNIT-0000')}</CField>
@@ -164,6 +180,27 @@ export default function LogComplaintPage({ users, user, complaints, onSubmit, on
             }}
           />
         </CField>
+
+        {/* ── Attachments ──────────────────────────────────────── */}
+        <div style={{ ...sh, marginTop: 6 }}>📎 Attachments</div>
+        <div style={{ marginBottom: mb }}>
+          <label style={{ ...btn('ghost'), padding: '7px 14px', fontSize: 12, display: 'inline-flex', cursor: 'pointer' }}>
+            {uploading ? 'Uploading…' : '+ Attach Files'}
+            <input type="file" multiple style={{ display: 'none' }} onChange={handleFiles} disabled={uploading} />
+          </label>
+          {files.length > 0 && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 }}>
+              {files.map((f, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 10px', background: '#F8FAFC', borderRadius: 6, border: '1px solid #F1F5F9' }}>
+                  <span style={{ fontSize: 16 }}>{f.type === 'image' ? '🖼' : '📄'}</span>
+                  <div style={{ flex: 1, fontSize: 12, color: '#0F2044', fontWeight: 600 }}>{f.name}</div>
+                  <div style={{ fontSize: 11, color: '#94A3B8' }}>{f.size}</div>
+                  <span style={{ fontSize: 11, color: '#C62828', cursor: 'pointer', fontWeight: 600 }} onClick={() => removeFile(i)}>Remove</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
 
         {/* ── Preview + Actions ────────────────────────────────── */}
         <div style={{
@@ -213,7 +250,7 @@ export default function LogComplaintPage({ users, user, complaints, onSubmit, on
             </button>
             <button
               style={{ ...btn('primary'), padding: '8px 14px', fontSize: 12, ...(isPhone && { textAlign: 'center' }) }}
-              onClick={() => validate() && onSubmit(f)}
+              onClick={() => validate() && onSubmit({ ...f, attachments: files })}
             >
               Submit Complaint →
             </button>

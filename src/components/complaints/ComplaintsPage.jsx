@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { btn, inputStyle, StatusBadge, PriorityBadge, RegionBadge, SLABar, THead, TableWrap, EmptyState } from '@/components/shared'
 import { STATUSES, COMPLAINT_TYPES, REGIONS, PRIORITIES } from '@/data/constants'
-import { fmt, exportToCSV, prepareExportData } from '@/utils/helpers'
+import { fmt, exportToCSV, prepareExportData, getSLA } from '@/utils/helpers'
 
 const PER_PAGE = 12
 
@@ -33,12 +33,14 @@ function ComplaintCard({ c, users, onSelect, idx }) {
   )
 }
 
-export default function ComplaintsPage({ complaints, users, user, onSelect, onLog, isMobile }) {
+export default function ComplaintsPage({ complaints, users, user, onSelect, onLog, initialFilter, dropdownConfig, isMobile }) {
+  const types = dropdownConfig?.complaintTypes || COMPLAINT_TYPES
   const [search, setSearch]     = useState('')
-  const [fRegion, setFRegion]   = useState('All')
-  const [fStatus, setFStatus]   = useState('All')
-  const [fType, setFType]       = useState('All')
+  const [fRegion, setFRegion]   = useState(initialFilter?.region || 'All')
+  const [fStatus, setFStatus]   = useState(initialFilter?.status || 'All')
+  const [fType, setFType]       = useState(initialFilter?.type || 'All')
   const [fPriority, setFPriority] = useState('All')
+  const [special, setSpecial]   = useState(initialFilter?.open ? 'open' : initialFilter?.slaBreach ? 'breach' : null)
   const [sort, setSort]         = useState('date_desc')
   const [page, setPage]         = useState(1)
   const [showFilters, setShowFilters] = useState(false)
@@ -50,6 +52,8 @@ export default function ComplaintsPage({ complaints, users, user, onSelect, onLo
     if (fStatus !== 'All' && c.status !== fStatus) return false
     if (fType !== 'All' && c.type !== fType) return false
     if (fPriority !== 'All' && c.priority !== fPriority) return false
+    if (special === 'open' && ['Resolved','Closed'].includes(c.status)) return false
+    if (special === 'breach' && getSLA(c).status !== 'breach') return false
     return true
   }).sort((a,b) => {
     if (sort === 'date_desc') return new Date(b.loggedAt)-new Date(a.loggedAt)
@@ -62,8 +66,8 @@ export default function ComplaintsPage({ complaints, users, user, onSelect, onLo
   const pages = Math.ceil(filtered.length / PER_PAGE)
   const paged = filtered.slice((page-1)*PER_PAGE, page*PER_PAGE)
 
-  const clearFilters = () => { setSearch(''); setFRegion('All'); setFStatus('All'); setFType('All'); setFPriority('All'); setPage(1) }
-  const hasFilters = search || fRegion !== 'All' || fStatus !== 'All' || fType !== 'All' || fPriority !== 'All'
+  const clearFilters = () => { setSearch(''); setFRegion('All'); setFStatus('All'); setFType('All'); setFPriority('All'); setSpecial(null); setPage(1) }
+  const hasFilters = search || fRegion !== 'All' || fStatus !== 'All' || fType !== 'All' || fPriority !== 'All' || special
 
   const handleExport = () => exportToCSV(prepareExportData(filtered, users), 'complaints')
 
@@ -83,7 +87,7 @@ export default function ComplaintsPage({ complaints, users, user, onSelect, onLo
       </select>
       <select style={isMobile ? { ...inputStyle, flex: 1 } : sel} value={fType} onChange={e => { setFType(e.target.value); setPage(1) }}>
         <option value="All">All Types</option>
-        {COMPLAINT_TYPES.map(t => <option key={t}>{t}</option>)}
+        {types.map(t => <option key={t}>{t}</option>)}
       </select>
       <select style={isMobile ? { ...inputStyle, flex: 1 } : sel} value={fPriority} onChange={e => { setFPriority(e.target.value); setPage(1) }}>
         <option value="All">All Priorities</option>
@@ -103,6 +107,12 @@ export default function ComplaintsPage({ complaints, users, user, onSelect, onLo
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      {special && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#E3F2FD', border: '1px solid #90CAF9', borderRadius: 8, padding: '8px 14px', fontSize: 12, fontWeight: 600, color: '#0D47A1' }}>
+          🔎 Showing: {special === 'open' ? 'Open / Pending complaints' : 'SLA Breached complaints'}
+          <button style={{ ...btn('ghost'), padding: '2px 8px', fontSize: 11, marginLeft: 'auto' }} onClick={() => setSpecial(null)}>✕ Clear</button>
+        </div>
+      )}
       {/* Filter bar */}
       {isMobile ? (
         <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #E2E8F0', boxShadow: '0 1px 4px rgba(15,32,68,0.06)', overflow: 'hidden' }}>

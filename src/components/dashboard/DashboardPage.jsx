@@ -27,7 +27,7 @@ function ComplaintCard({ c, users, onOpenComplaint }) {
   )
 }
 
-export default function DashboardPage({ complaints, users, onOpenComplaint, isMobile }) {
+export default function DashboardPage({ complaints, users, onOpenComplaint, onNavigateFiltered, isMobile }) {
   const open     = complaints.filter(c => !['Resolved','Closed'].includes(c.status))
   const resolved = complaints.filter(c => ['Resolved','Closed'].includes(c.status))
   const escalated= complaints.filter(c => c.status === 'Escalated')
@@ -37,11 +37,11 @@ export default function DashboardPage({ complaints, users, onOpenComplaint, isMo
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <div className="rg-kpi" style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: 14 }}>
-        <KPICard label="Total Complaints" value={complaints.length} color="#1565C0" icon="📋" />
-        <KPICard label="Open / Pending" value={open.length} color="#FB8C00" icon="⏳" sub={`${open.filter(c=>c.status==='New').length} new`} />
-        <KPICard label="Resolved" value={resolved.length} color="#43A047" icon="✅" />
-        <KPICard label="Escalated" value={escalated.length} color="#E53935" icon="🚨" />
-        <KPICard label="SLA Breached" value={breach.length} color="#7B1FA2" icon="⏱" />
+        <KPICard label="Total Complaints" value={complaints.length} color="#1565C0" icon="📋" onClick={() => onNavigateFiltered?.()} />
+        <KPICard label="Open / Pending" value={open.length} color="#FB8C00" icon="⏳" sub={`${open.filter(c=>c.status==='New').length} new`} onClick={() => onNavigateFiltered?.({ open: true })} />
+        <KPICard label="Resolved" value={resolved.length} color="#43A047" icon="✅" onClick={() => onNavigateFiltered?.({ status: 'Resolved' })} />
+        <KPICard label="Escalated" value={escalated.length} color="#E53935" icon="🚨" onClick={() => onNavigateFiltered?.({ status: 'Escalated' })} />
+        <KPICard label="SLA Breached" value={breach.length} color="#7B1FA2" icon="⏱" onClick={() => onNavigateFiltered?.({ slaBreach: true })} />
       </div>
 
       <div className="rg-3" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14 }}>
@@ -53,7 +53,7 @@ export default function DashboardPage({ complaints, users, onOpenComplaint, isMo
             const opn   = total - res
             const m = REGION_META[r]
             return (
-              <div key={r} style={{ marginBottom: 14 }}>
+              <div key={r} style={{ marginBottom: 14, cursor: onNavigateFiltered ? 'pointer' : 'default' }} onClick={() => onNavigateFiltered?.({ region: r })}>
                 <div style={{ display:'flex', justifyContent:'space-between', marginBottom:5 }}>
                   <RegionBadge region={r} />
                   <span style={{ fontSize:11, color:'#64748B' }}>{total} total</span>
@@ -76,7 +76,7 @@ export default function DashboardPage({ complaints, users, onOpenComplaint, isMo
             const n = complaints.filter(c=>c.type===t).length
             if (!n) return null
             return (
-              <div key={t} style={{ display:'flex', alignItems:'center', gap:8, marginBottom:9 }}>
+              <div key={t} style={{ display:'flex', alignItems:'center', gap:8, marginBottom:9, cursor: onNavigateFiltered ? 'pointer' : 'default' }} onClick={() => onNavigateFiltered?.({ type: t })}>
                 <div style={{ fontSize:11, color:'#475569', width:130, flexShrink:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{t}</div>
                 <div style={{ flex:1, background:'#F1F5F9', borderRadius:4, height:7 }}>
                   <div style={{ height:'100%', background:'#1565C0', borderRadius:4, width:`${complaints.length?(n/complaints.length)*100:0}%` }} />
@@ -93,7 +93,7 @@ export default function DashboardPage({ complaints, users, onOpenComplaint, isMo
             const n = complaints.filter(c=>c.status===s).length
             const m = STATUS_META[s]
             return (
-              <div key={s} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'5px 0', borderBottom:'1px solid #F8FAFC' }}>
+              <div key={s} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'5px 0', borderBottom:'1px solid #F8FAFC', cursor: onNavigateFiltered ? 'pointer' : 'default' }} onClick={() => onNavigateFiltered?.({ status: s })}>
                 <StatusBadge status={s} />
                 <div style={{ display:'flex', alignItems:'center', gap:8 }}>
                   <div style={{ width:44, background:'#F1F5F9', borderRadius:4, height:6 }}>

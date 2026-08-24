@@ -16,19 +16,38 @@ cd cms
 npm install
 ```
 
-### 2. Run development server
+### 2. Set up the shared database (Supabase)
+All complaint/user/dropdown data is stored in Supabase (Postgres) and synced live to every
+browser via Supabase Realtime — this is what makes changes made by one user (admin,
+coordinator, field engineer, etc.) show up instantly for everyone else.
+
+1. Create a free project at [supabase.com](https://supabase.com).
+2. In your new project, go to **SQL Editor → New query**, paste the contents of
+   [`supabase/schema.sql`](supabase/schema.sql), and run it. This creates the `users`,
+   `complaints`, and `dropdown_options` tables, enables Realtime on them, and seeds demo data.
+3. Go to **Project Settings → API** and copy the **Project URL** and **anon public** key.
+4. Copy `.env.example` to `.env` and fill in both values:
+   ```bash
+   cp .env.example .env
+   ```
+   ```
+   VITE_SUPABASE_URL=https://xxxxx.supabase.co
+   VITE_SUPABASE_ANON_KEY=eyJ...
+   ```
+
+### 3. Run development server
 ```bash
 npm run dev
 ```
 Opens at **http://localhost:3000**
 
-### 3. Build for production
+### 4. Build for production
 ```bash
 npm run build
 ```
 Output goes to `dist/` — deploy this folder.
 
-### 4. Preview production build locally
+### 5. Preview production build locally
 ```bash
 npm run preview
 ```
@@ -110,18 +129,20 @@ Configured in `vite.config.js`.
 
 ---
 
-## localStorage Keys
+## Where Data Lives
 
-All data is persisted in the browser's localStorage:
+| Storage | Contents |
+|---------|----------|
+| Supabase `complaints` table | All complaints — synced live to every user |
+| Supabase `users` table | All users — synced live to every user |
+| Supabase `dropdown_options` table | Admin-editable Complaint Type / Product Category lists — synced live |
+| Browser localStorage `cms_current_user` | This device's logged-in session only |
+| Browser localStorage `cms_notifications` | This device's SLA alert bell only |
 
-| Key | Contents |
-|-----|----------|
-| `cms_complaints` | Array of all complaints |
-| `cms_users` | Array of all users |
-| `cms_current_user` | Currently logged-in user object |
-| `cms_notifications` | SLA alert notification array |
-
-To reset all data: **Settings → Reset to Seed Data**, or clear localStorage manually.
+To bulk-reset the shared demo data back to seed values, re-run
+[`supabase/schema.sql`](supabase/schema.sql) in the Supabase SQL Editor (it drops and
+recreates the tables). **Settings → Clear Local Session** only clears this device's login
+session and cached preferences — it does not touch shared data.
 
 ---
 
@@ -160,6 +181,14 @@ To reset all data: **Settings → Reset to Seed Data**, or clear localStorage ma
 npm install -g vercel
 vercel
 ```
+Vercel builds a static site, so it never sees your Supabase credentials at build time —
+you must add them as **Environment Variables** in the Vercel project (Settings →
+Environment Variables) before deploying, using the same names as `.env`:
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_ANON_KEY`
+
+If deploying via the Vercel dashboard instead of the CLI: import the GitHub repo, add the
+two environment variables above, then deploy.
 
 ### Option B — Netlify
 ```bash
@@ -187,60 +216,27 @@ location / {
 
 ---
 
-## Swapping in a Real Backend
+## How Data Syncs (Supabase)
 
-This demo uses **localStorage** for data persistence. For production, replace:
+`complaints`, `users`, and `dropdown_options` all live in Supabase Postgres
+(see [`supabase/schema.sql`](supabase/schema.sql)). Each hook (`useComplaints`,
+`useAuth`, `useDropdownConfig`) loads its table once on mount, then subscribes to a
+Supabase Realtime channel (`postgres_changes`) — so when any client inserts/updates a
+row, every other open browser receives the change over a websocket and updates its UI,
+usually within a second, with no refresh needed.
 
-### 1. `src/hooks/useComplaints.js`
-Replace `useLocalStorage` calls with `fetch()` or `axios` calls to your REST API:
-```js
-// Current (localStorage):
-const [complaints, setComplaints] = useLocalStorage('cms_complaints', SEED_COMPLAINTS)
+`cms_current_user` (the logged-in session) and `cms_notifications` (the alert bell) stay
+in each browser's localStorage on purpose — a login session and a notification feed are
+naturally per-device, not shared state.
 
-// Replace with (API):
-const [complaints, setComplaints] = useState([])
-useEffect(() => {
-  fetch('/api/complaints').then(r => r.json()).then(setComplaints)
-}, [])
-```
-
-### 2. `src/hooks/useAuth.js`
-Replace password matching with a real `/api/auth/login` endpoint:
-```js
-// Replace the login() function body with:
-const res = await fetch('/api/auth/login', {
-  method: 'POST',
-  body: JSON.stringify({ email, password }),
-  headers: { 'Content-Type': 'application/json' }
-})
-const data = await res.json()
-if (data.token) {
-  localStorage.setItem('cms_token', data.token)
-  setCurrentUser(data.user)
-  return { success: true }
-}
-return { success: false, error: data.error }
-```
-
-### Recommended Backend Stack
-- **Node.js + Express** or **Django REST Framework**
-- **PostgreSQL** database
-- **JWT** for authentication
-- **AWS S3** or **Cloudinary** for file attachments
-- **NodeMailer** or **SendGrid** for email notifications
-
----
-
-## Known Limitations (Current Demo)
-
-| Limitation | Production Fix |
-|------------|----------------|
-| Data lost on localStorage clear | PostgreSQL backend |
-| Passwords stored in plain text | Hashed passwords + JWT |
-| File uploads are UI-only | S3/Cloudinary integration |
-| Email notifications are simulated | SendGrid/NodeMailer |
-| No real multi-user sync | WebSocket or polling |
-| CSV only (no Excel/PDF export) | Backend export endpoint |
+### Still worth hardening before a wider rollout
+| Limitation | Why | Fix |
+|------------|-----|-----|
+| Passwords stored/checked in plain text | Kept the original demo's login flow as-is | Move to Supabase Auth with hashed passwords |
+| Anon key has full read/write on all tables | No per-role Row Level Security yet | Add RLS policies once real Supabase Auth is wired up |
+| File uploads stored as base64 inside JSONB columns | Simple, no extra setup | Move to Supabase Storage for larger files |
+| Email notifications are simulated (in-app only) | Out of current scope | SendGrid/Resend integration |
+| CSV only (no Excel/PDF export) | Out of current scope | Backend export endpoint |
 
 ---
 
